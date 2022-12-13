@@ -1,0 +1,38 @@
+========================================================================================
+QUESTÃO 1
+
+select name from sqlchallenge1.accounts
+where length(website) = (select max(length(website)) from sqlchallenge1.accounts)
+
+RESPOSTA: United Continental Holdings
+========================================================================================
+QUESTÃO 2
+
+select count(*) from sqlchallenge1.sales_reps where name like '%e%' or name like '%E%'
+
+RESPOSTA: 40
+=========================================================================================
+QUESTÃO 3
+
+select name from sqlchallenge1.accounts where name like '%&%' order by name
+
+RESPOSTA: Air Products & Chemicals
+=========================================================================================
+QUESTÃO 4
+
+select a.sales_rep_id
+from sqlchallenge1.orders o join sqlchallenge1.accounts a
+on o.account_id = a.id and o.occurred_at = 
+(select occurred_at from sqlchallenge1.orders
+where extract(year from occurred_at) = '2015' and 
+extract(month from occurred_at) = '5' order by occurred_at desc limit 1)
+
+RESPOSTA: 321760
+========================================================================================
+QUESTÃO 5
+
+select count(*) from sqlchallenge1.sales_reps s join sqlchallenge1.region r
+on s.region_id = r.id and r.name = 'Northeast'
+
+RESPOSTA: 21
+

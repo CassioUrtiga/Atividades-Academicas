@@ -1,0 +1,187 @@
+=====================================================================================================
+QUESTÃO 1
+
+create or replace function reajustar_salario() returns void as
+$$
+begin
+
+update funcionarios
+set salario = salario + (salario*5)/100
+where
+nome in (select nome 
+from funcionarios
+where id not in
+(select f.id 
+from atividadesprojetos ap , projetos pj , atividades av , funcionarios f
+where pj.id = ap.projeto_id and av.id = ap.atividade_id and f.id = pj.funcionario_responsavel_id));
+
+
+update funcionarios
+set salario = salario + (salario*10)/100
+where
+nome in (select f.nome
+from atividadesprojetos ap , projetos pj , atividades av , funcionarios f
+where pj.id = ap.projeto_id and av.id = ap.atividade_id and f.id = pj.funcionario_responsavel_id
+group by f.nome having count(*) <= 2);
+
+
+update funcionarios
+set salario = salario + (salario*15)/100
+where
+nome in (select f.nome
+from atividadesprojetos ap , projetos pj , atividades av , funcionarios f
+where pj.id = ap.projeto_id and av.id = ap.atividade_id and f.id = pj.funcionario_responsavel_id
+group by f.nome having count(*) >= 3);
+
+end;
+$$ language plpgsql;
+========================================================================================================
+QUESTÃO 2
+
+select reajustar_salario()
+
+========================================================================================================
+QUESTÃO 3
+
+alter table departamentos add total_atividades numeric
+
+update departamentos
+set total_atividades = 
+(select count(*)
+from departamentos d, projetos pj, atividadesprojetos ap
+where pj.departamento_id = 1 and ap.projeto_id = pj.id and pj.departamento_id = d.id
+group by d.descricao)
+where id = 1;
+
+update departamentos
+set total_atividades = 
+(select count(*)
+from departamentos d, projetos pj, atividadesprojetos ap
+where pj.departamento_id = 2 and ap.projeto_id = pj.id and pj.departamento_id = d.id
+group by d.descricao)
+where id = 2;
+
+update departamentos
+set total_atividades = 
+(select count(*)
+from departamentos d, projetos pj, atividadesprojetos ap
+where pj.departamento_id = 3 and ap.projeto_id = pj.id and pj.departamento_id = d.id
+group by d.descricao)
+where id = 3;
+=====================================================================================
+QUESTÃO 4
+
+create or replace function atualizar() returns trigger as
+$$
+declare
+total numeric;
+departamento_id numeric;
+begin
+
+select d.id
+from projetos p join departamentos d
+on p.id = new.projeto_id and p.departamento_id = d.id
+into departamento_id;
+
+update departamentos
+set total_atividades = 0
+where id = departamento_id and total_atividades is null;
+
+select d.total_atividades
+from projetos p join departamentos d
+on p.id = new.projeto_id and p.departamento_id = d.id
+into total;
+
+update departamentos
+set total_atividades = total + 1
+where id = departamento_id;
+
+return new;
+end;
+$$ language plpgsql;
+
+
+create trigger trg_atualizar
+after insert on atividadesprojetos 
+for each row 
+execute procedure atualizar()
+
+OU
+
+create or replace trigger trigger_atualizar
+after insert on atividadesprojetos
+for each row
+execute function atualizar()
+========================================================================================
+QUESTÃO 5
+
+create table premios (
+id serial, 
+funcionario_id int references funcionarios (id), 
+data Date, 
+valor numeric(8,2),
+constraint premios_pk primary key(id)
+)
+
+
+=============================================================================================
+QUESTÃO 6
+
+create or replace function receber_premio() returns trigger as
+$$
+declare
+id_func numeric;
+salario_func numeric;
+num_atv numeric;
+begin
+
+select count(*)
+from projetos pr, atividadesprojetos ap
+where pr.id = new.projeto_id and ap.projeto_id = pr.id
+group by ap.projeto_id
+into num_atv;
+
+if (num_atv = 3) then
+
+	select pr.funcionario_responsavel_id
+	from projetos pr
+	where pr.id = new.projeto_id
+	into id_func;
+
+	select salario
+	from funcionarios
+	where id = id_func
+	into salario_func;
+
+	salario_func = salario_func + (salario_func*20)/100;
+
+	insert into premios (funcionario_id, data, valor) values (id_func, null, salario_func);
+end if;
+
+return new;
+end;
+$$ language plpgsql;
+
+
+create trigger trg_receber_premio
+after insert on atividadesprojetos 
+for each row 
+execute procedure receber_premio()
+
+OU
+
+create or replace trigger trigger_receber_premio
+after insert on atividadesprojetos
+for each row
+execute function receber_premio()
+=================================================================================================
+QUESTÃO 7
+
+create view total_premios_2022 as
+select f.nome, sum(valor)
+from funcionarios f
+join premios pr
+on f.id = pr.funcionario_id
+and extract(year from data) = '2022'
+group by f.nome
+

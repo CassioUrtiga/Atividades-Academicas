@@ -1,0 +1,64 @@
+======================QUESTÃO 1================================
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+create table esquema(
+	id uuid DEFAULT uuid_generate_v4 (),
+	dados jsonb
+)
+
+
+======================QUESTÃO 2===================================
+
+insert into esquema (dados) values
+('{
+ "pacientes": {"nome": "cassio", "endereco": "joão leite", "telefone": ["90091101", "88999911", "6559858"]},
+ "medicos": {"nome": "pedro"},
+ "especialidades": {"descricao": "dentista"},
+ "consultas": {"data": "09-09-2022"}
+ }'),
+('{
+  "pacientes": {"nome": "maria", "endereco": "jardim das flores", "telefone": ["99551202", "83991221"]},
+  "medicos": {"nome": "pedro"},
+  "especialidades": {"descricao": ["dentista", "pediatra"]},
+  "consultas": {"data": "01-10-2022"}
+ }'),
+ ('{
+  "pacientes": {"nome": "givaldo", "endereco": "matilde de castro", "telefone": "95543996"},
+  "medicos": {"nome": "pedro"},
+  "especialidades": {"descricao": ["ortopedista", "cardiologista"]},
+  "consultas": {"data": "12-12-2022"}
+ }'),
+ ('{
+  "pacientes": {"nome": "maísa", "endereco": "rua principal", "telefone": "92112300"},
+  "medicos": {"nome": "fernanda"},
+  "especialidades": {"descricao": "dermatologista"},
+  "consultas": {"data": "20-05-2022"}
+ }'),
+ ('{
+  "pacientes": {"nome": "matheus", "endereco": "avenida paulista", "telefone": "93985003"},
+  "medicos": {"nome": "bianca"},
+  "especialidades": {"descricao": "veterinária"},
+  "consultas": {"data": "09-09-2022"}
+ }')
+
+
+=======================QUESTÃO 3==========================
+
+select distinct(dados -> 'medicos' ->> 'nome') as medicos from esquema
+
+
+=======================QUESTÃO 4===========================
+
+select dados -> 'pacientes' ->> 'nome' as pacientes
+from esquema
+where dados -> 'medicos' -> 'nome' = '"pedro"'
+
+
+======================QUESTÃO 5=============================
+
+select jsonb_array_elements_text(dados -> 'pacientes' -> 'telefone') as phone
+from esquema
+where dados -> 'pacientes' -> 'nome' = '"cassio"'
+
+============================================================
